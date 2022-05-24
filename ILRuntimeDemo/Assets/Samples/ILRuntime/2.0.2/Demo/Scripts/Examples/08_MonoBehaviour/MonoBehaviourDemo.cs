@@ -40,9 +40,9 @@ public class MonoBehaviourDemo : MonoBehaviour
         //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         //这个DLL文件是直接编译HotFix_Project.sln生成的，已经在项目中设置好输出目录为StreamingAssets，在VS里直接编译即可生成到对应目录，无需手动拷贝
 #if UNITY_ANDROID
-        WWW www = new WWW(Application.streamingAssetsPath + "/HotFix_Project.dll");
+        WWW www = new WWW(Application.streamingAssetsPath + "/Hotfix.dll");
 #else
-        WWW www = new WWW("file:///" + Application.streamingAssetsPath + "/HotFix_Project.dll");
+        WWW www = new WWW("file:///" + Application.streamingAssetsPath + "/Hotfix.dll");
 #endif
         while (!www.isDone)
             yield return null;
@@ -53,9 +53,9 @@ public class MonoBehaviourDemo : MonoBehaviour
 
         //PDB文件是调试数据库，如需要在日志中显示报错的行号，则必须提供PDB文件，不过由于会额外耗用内存，正式发布时请将PDB去掉，下面LoadAssembly的时候pdb传null即可
 #if UNITY_ANDROID
-        www = new WWW(Application.streamingAssetsPath + "/HotFix_Project.pdb");
+        www = new WWW(Application.streamingAssetsPath + "/Hotfix.pdb");
 #else
-        www = new WWW("file:///" + Application.streamingAssetsPath + "/HotFix_Project.pdb");
+        www = new WWW("file:///" + Application.streamingAssetsPath + "/Hotfix.pdb");
 #endif
         while (!www.isDone)
             yield return null;
@@ -70,7 +70,7 @@ public class MonoBehaviourDemo : MonoBehaviour
         }
         catch
         {
-            Debug.LogError("加载热更DLL失败，请确保已经通过VS打开Assets/Samples/ILRuntime/1.6/Demo/HotFix_Project/HotFix_Project.sln编译过热更DLL");
+            Debug.LogError("加载热更DLL失败，请确保已经通过VS打开Assets/Samples/ILRuntime/1.6/Demo/Hotfix/Hotfix.sln编译过热更DLL");
         }
 
         InitializeILRuntime();
@@ -105,17 +105,17 @@ public class MonoBehaviourDemo : MonoBehaviour
         Debug.Log("因此我们需要挟持AddComponent方法，然后自己实现");
         Debug.Log("我们先销毁掉之前创建的不合法的MonoBehaviour");
         SetupCLRRedirection();
-        appdomain.Invoke("HotFix_Project.TestMonoBehaviour", "RunTest", null, gameObject);
+        appdomain.Invoke("Hotfix.TestMonoBehaviour", "RunTest", null, gameObject);
 
         Debug.Log("可以看到已经成功了");
         Debug.Log("下面做另外一个实验");
         Debug.Log("GetComponent跟AddComponent类似，需要我们自己处理");
         SetupCLRRedirection2();
-        appdomain.Invoke("HotFix_Project.TestMonoBehaviour", "RunTest2", null, gameObject);
+        appdomain.Invoke("Hotfix.TestMonoBehaviour", "RunTest2", null, gameObject);
         Debug.Log("成功了");
         Debug.Log("那我们怎么从Unity主工程获取热更DLL的MonoBehaviour呢？");
         Debug.Log("这需要我们自己实现一个GetComponent方法");
-        var type = appdomain.LoadedTypes["HotFix_Project.SomeMonoBehaviour2"] as ILType;
+        var type = appdomain.LoadedTypes["Hotfix.SomeMonoBehaviour2"] as ILType;
         var smb = GetComponent(type);
         var m = type.GetMethod("Test2");
         Debug.Log("现在来试试调用");
