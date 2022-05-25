@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-
 using ILRuntime.CLR.Utils;
 using ILRuntime.CLR.Method;
 using ILRuntime.CLR.TypeSystem;
@@ -24,6 +23,7 @@ namespace ILRuntime.Runtime.Intepreter
                 managedObjs.Add(null);
                 StackObject.Initialized(ref fields[i], i, ft, managedObjs);
             }
+
             int idx = 0;
             foreach (var i in type.TypeDefinition.Fields)
             {
@@ -35,6 +35,7 @@ namespace ILRuntime.Runtime.Intepreter
                         fields[idx].Value = idx;
                         managedObjs[idx] = i.InitialValue;
                     }
+
                     idx++;
                 }
             }
@@ -71,6 +72,7 @@ namespace ILRuntime.Runtime.Intepreter
             }
             else
                 intVal = this.fields[0].Value;
+
             for (int i = 0; i < fields.Count; i++)
             {
                 var f = fields[i];
@@ -94,7 +96,7 @@ namespace ILRuntime.Runtime.Intepreter
                             if ((short)f.Constant == intVal)
                                 return f.Name;
                         }
-                        else if(f.Constant is long)
+                        else if (f.Constant is long)
                         {
                             if ((long)f.Constant == longVal)
                                 return f.Name;
@@ -106,7 +108,7 @@ namespace ILRuntime.Runtime.Intepreter
                         }
                         else if (f.Constant is uint)
                         {
-                            int val = (int) (uint) f.Constant;
+                            int val = (int)(uint)f.Constant;
                             if (val == intVal)
                                 return f.Name;
                         }
@@ -125,6 +127,7 @@ namespace ILRuntime.Runtime.Intepreter
                     }
                 }
             }
+
             return isLong ? longVal.ToString() : intVal.ToString();
         }
     }
@@ -140,10 +143,7 @@ namespace ILRuntime.Runtime.Intepreter
 
         public ILType Type
         {
-            get
-            {
-                return type;
-            }
+            get { return type; }
         }
 
         public StackObject[] Fields
@@ -153,10 +153,7 @@ namespace ILRuntime.Runtime.Intepreter
 
         public virtual bool IsValueType
         {
-            get
-            {
-                return type.IsValueType && !Boxed;
-            }
+            get { return type.IsValueType && !Boxed; }
         }
 
         /// <summary>
@@ -164,14 +161,21 @@ namespace ILRuntime.Runtime.Intepreter
         /// </summary>
         public bool Boxed { get; set; }
 
-        public IList<object> ManagedObjects { get { return managedObjs; } }
+        public IList<object> ManagedObjects
+        {
+            get { return managedObjs; }
+        }
 
-        public object CLRInstance { get { return clrInstance; } set { clrInstance = value; } }
+        public object CLRInstance
+        {
+            get { return clrInstance; }
+            set { clrInstance = value; }
+        }
 
         protected ILTypeInstance()
         {
-
         }
+
         public ILTypeInstance(ILType type, bool initializeCLRInstance = true)
         {
             this.type = type;
@@ -182,6 +186,7 @@ namespace ILRuntime.Runtime.Intepreter
             {
                 managedObjs.Add(null);
             }
+
             InitializeFields(type);
             if (initializeCLRInstance)
             {
@@ -193,12 +198,14 @@ namespace ILRuntime.Runtime.Intepreter
                 {
                     clrInstance = this;
                 }
-                if(type.FirstCLRInterface is Enviorment.CrossBindingAdaptor)
+
+                if (type.FirstCLRInterface is Enviorment.CrossBindingAdaptor)
                 {
-                    if (clrInstance != this)//Only one CLRInstance is allowed atm, so implementing multiple interfaces is not supported
+                    if (clrInstance != this) //Only one CLRInstance is allowed atm, so implementing multiple interfaces is not supported
                     {
                         throw new NotSupportedException("Inheriting and implementing interface at the same time is not supported yet");
                     }
+
                     clrInstance = ((Enviorment.CrossBindingAdaptor)type.FirstCLRInterface).CreateCLRInstance(type.AppDomain, this);
                 }
             }
@@ -222,7 +229,8 @@ namespace ILRuntime.Runtime.Intepreter
                 {
                     if (Type.FirstCLRBaseType != null && Type.FirstCLRBaseType is Enviorment.CrossBindingAdaptor)
                     {
-                        CLRType clrType = type.AppDomain.GetType(((Enviorment.CrossBindingAdaptor)Type.FirstCLRBaseType).BaseCLRType) as CLRType;
+                        CLRType clrType =
+                            type.AppDomain.GetType(((Enviorment.CrossBindingAdaptor)Type.FirstCLRBaseType).BaseCLRType) as CLRType;
                         return clrType.GetFieldValue(index, clrInstance);
                     }
                     else
@@ -252,7 +260,6 @@ namespace ILRuntime.Runtime.Intepreter
                             }
                             else
                             {
-                                
                                 esp->ObjectType = ObjectTypes.Object;
                                 esp->Value = index;
                                 managedObjs[index] = value;
@@ -266,7 +273,8 @@ namespace ILRuntime.Runtime.Intepreter
                 {
                     if (Type.FirstCLRBaseType != null && Type.FirstCLRBaseType is Enviorment.CrossBindingAdaptor)
                     {
-                        CLRType clrType = type.AppDomain.GetType(((Enviorment.CrossBindingAdaptor)Type.FirstCLRBaseType).BaseCLRType) as CLRType;
+                        CLRType clrType =
+                            type.AppDomain.GetType(((Enviorment.CrossBindingAdaptor)Type.FirstCLRBaseType).BaseCLRType) as CLRType;
                         clrType.SetFieldValue(index, ref clrInstance, value);
                     }
                     else
@@ -297,7 +305,6 @@ namespace ILRuntime.Runtime.Intepreter
                         }
                         else
                         {
-
                             esp->ObjectType = ObjectTypes.Object;
                             esp->Value = index;
                             managedObjs[index] = value;
@@ -311,7 +318,8 @@ namespace ILRuntime.Runtime.Intepreter
             {
                 if (Type.FirstCLRBaseType != null && Type.FirstCLRBaseType is Enviorment.CrossBindingAdaptor)
                 {
-                    CLRType clrType = type.AppDomain.GetType(((Enviorment.CrossBindingAdaptor)Type.FirstCLRBaseType).BaseCLRType) as CLRType;
+                    CLRType clrType =
+                        type.AppDomain.GetType(((Enviorment.CrossBindingAdaptor)Type.FirstCLRBaseType).BaseCLRType) as CLRType;
                     clrType.SetFieldValue(index, ref clrInstance, value);
                 }
                 else
@@ -320,6 +328,7 @@ namespace ILRuntime.Runtime.Intepreter
         }
 
         const int SizeOfILTypeInstance = 21;
+
         public unsafe int GetSizeInMemory(HashSet<object> traversedObj)
         {
             if (traversedObj.Contains(this))
@@ -336,6 +345,7 @@ namespace ILRuntime.Runtime.Intepreter
                     size += GetSizeInMemory(i, traversedObj);
                 }
             }
+
             return size;
         }
 
@@ -352,6 +362,7 @@ namespace ILRuntime.Runtime.Intepreter
             {
                 return Encoding.Unicode.GetByteCount((string)obj);
             }
+
             Type t = obj.GetType();
             if (t.IsArray)
             {
@@ -364,6 +375,7 @@ namespace ILRuntime.Runtime.Intepreter
                 }
                 else
                     elementSize = 4;
+
                 return arr.Length * elementSize;
             }
             else
@@ -397,6 +409,7 @@ namespace ILRuntime.Runtime.Intepreter
                             }
                         }
                     }
+
                     return size;
                 }
             }
@@ -412,8 +425,10 @@ namespace ILRuntime.Runtime.Intepreter
                 {
                     valueTypeMask |= (ulong)1 << idx;
                 }
+
                 StackObject.Initialized(ref fields[idx], idx, ft, managedObjs);
             }
+
             if (type.BaseType != null && type.BaseType is ILType)
                 InitializeFields((ILType)type.BaseType);
         }
@@ -436,36 +451,13 @@ namespace ILRuntime.Runtime.Intepreter
             {
                 if (Type.FirstCLRBaseType != null && Type.FirstCLRBaseType is Enviorment.CrossBindingAdaptor)
                 {
-                    CLRType clrType = intp.AppDomain.GetType(((Enviorment.CrossBindingAdaptor)Type.FirstCLRBaseType).BaseCLRType) as CLRType;
+                    CLRType clrType =
+                        intp.AppDomain.GetType(((Enviorment.CrossBindingAdaptor)Type.FirstCLRBaseType).BaseCLRType) as CLRType;
                     var obj = clrType.GetFieldValue(fieldIdx, clrInstance);
                     if (obj is CrossBindingAdaptorType)
                         obj = ((CrossBindingAdaptorType)obj).ILInstance;
                     //if(!clrType.CopyFieldToStack(fieldIdx, clrInstance,))
                     ILIntepreter.PushObject(esp, managedStack, obj);
-                }
-                else
-                    throw new TypeLoadException();
-            }
-        }
-
-        internal unsafe void CopyToRegister(int fieldIdx,ref RegisterFrameInfo info, short reg)
-        {
-            if (fieldIdx < fields.Length && fieldIdx >= 0)
-            {
-                fixed(StackObject* ptr = fields)
-                {
-                    info.Intepreter.CopyToRegister(ref info, reg, &ptr[fieldIdx], managedObjs);
-                }
-            }
-            else
-            {
-                if (Type.FirstCLRBaseType != null && Type.FirstCLRBaseType is Enviorment.CrossBindingAdaptor)
-                {
-                    CLRType clrType = info.Intepreter.AppDomain.GetType(((Enviorment.CrossBindingAdaptor)Type.FirstCLRBaseType).BaseCLRType) as CLRType;
-                    var obj = clrType.GetFieldValue(fieldIdx, clrInstance);
-                    if (obj is CrossBindingAdaptorType)
-                        obj = ((CrossBindingAdaptorType)obj).ILInstance;
-                    ILIntepreter.AssignToRegister(ref info, reg, obj);
                 }
                 else
                     throw new TypeLoadException();
@@ -503,6 +495,7 @@ namespace ILRuntime.Runtime.Intepreter
                         }
                     }
                 }
+
                 *esp = field;
                 esp->Value = managedStack.Count;
                 managedStack.Add(managedObjs[fieldIdx]);
@@ -516,7 +509,7 @@ namespace ILRuntime.Runtime.Intepreter
             ptr->ObjectType = ObjectTypes.ValueTypeDescriptor;
             ptr->Value = type.TypeIndex;
             ptr->ValueLow = type.TotalFieldCount;
-            for(int i = 0; i < fields.Length; i++)
+            for (int i = 0; i < fields.Length; i++)
             {
                 var val = ILIntepreter.Minus(ptr, i + 1);
                 switch (val->ObjectType)
@@ -528,29 +521,29 @@ namespace ILRuntime.Runtime.Intepreter
                         val->ValueLow = fields[i].ValueLow;
                         break;
                     case ObjectTypes.ValueTypeObjectReference:
+                    {
+                        var obj = managedObjs[i];
+                        var dst = ILIntepreter.ResolveReference(val);
+                        var vt = type.AppDomain.GetTypeByIndex(dst->Value);
+                        if (vt is ILType)
                         {
-                            var obj = managedObjs[i];
-                            var dst = ILIntepreter.ResolveReference(val);
-                            var vt = type.AppDomain.GetTypeByIndex(dst->Value);
-                            if (vt is ILType)
-                            {
-                                ((ILTypeInstance)obj).CopyValueTypeToStack(dst, mStack);
-                            }
-                            else
-                            {
-                                ((CLRType)vt).ValueTypeBinder.CopyValueTypeToStack(obj, dst, mStack);
-                            }
+                            ((ILTypeInstance)obj).CopyValueTypeToStack(dst, mStack);
                         }
+                        else
+                        {
+                            ((CLRType)vt).ValueTypeBinder.CopyValueTypeToStack(obj, dst, mStack);
+                        }
+                    }
                         break;
                     default:
                         *val = fields[i];
                         break;
-                }                
+                }
             }
         }
 
         internal void Clear()
-        {   
+        {
             InitializeFields(type);
         }
 
@@ -558,7 +551,7 @@ namespace ILRuntime.Runtime.Intepreter
         {
             int curStart = type.FieldStartIndex;
             ILType curType = type;
-            while(curType != null)
+            while (curType != null)
             {
                 int maxIdx = curType.FieldStartIndex + curType.FieldTypes.Length;
                 if (fieldIdx < maxIdx && fieldIdx >= curType.FieldStartIndex)
@@ -570,6 +563,7 @@ namespace ILRuntime.Runtime.Intepreter
                 else
                     curType = curType.BaseType as ILType;
             }
+
             throw new NotImplementedException();
         }
 
@@ -583,7 +577,9 @@ namespace ILRuntime.Runtime.Intepreter
                 {
                     CLRType clrType = appdomain.GetType(((Enviorment.CrossBindingAdaptor)Type.FirstCLRBaseType).BaseCLRType) as CLRType;
                     var field = clrType.GetField(fieldIdx);
-                    clrType.SetFieldValue(fieldIdx, ref clrInstance, field.FieldType.CheckCLRTypes(ILIntepreter.CheckAndCloneValueType(StackObject.ToObject(esp, appdomain, managedStack), appdomain)));
+                    clrType.SetFieldValue(fieldIdx, ref clrInstance,
+                        field.FieldType.CheckCLRTypes(
+                            ILIntepreter.CheckAndCloneValueType(StackObject.ToObject(esp, appdomain, managedStack), appdomain)));
                 }
                 else
                     throw new TypeLoadException();
@@ -615,26 +611,25 @@ namespace ILRuntime.Runtime.Intepreter
                     managedObjs[fieldIdx] = ILIntepreter.CheckAndCloneValueType(managedStack[esp->Value], Type.AppDomain);
                     break;
                 case ObjectTypes.ValueTypeObjectReference:
+                {
+                    var domain = type.AppDomain;
+                    field.ObjectType = ObjectTypes.Object;
+                    field.Value = fieldIdx;
+                    var dst = ILIntepreter.ResolveReference(esp);
+                    var vt = domain.GetTypeByIndex(dst->Value);
+                    if (vt is ILType)
                     {
-                        var domain = type.AppDomain;
-                        field.ObjectType = ObjectTypes.Object;
-                        field.Value = fieldIdx;
-                        var dst = ILIntepreter.ResolveReference(esp);
-                        var vt = domain.GetTypeByIndex(dst->Value);
-                        if(vt is ILType)
-                        {
-                            var ins = managedObjs[fieldIdx];
-                            if (ins == null)
-                                throw new NullReferenceException();
-                            ILTypeInstance child = (ILTypeInstance)ins;
-                            child.AssignFromStack(esp, domain, managedStack);
-                        }
-                        else
-                        {
-                            managedObjs[fieldIdx] = ((CLRType)vt).ValueTypeBinder.ToObject(dst, managedStack);
-                        }
-                        
+                        var ins = managedObjs[fieldIdx];
+                        if (ins == null)
+                            throw new NullReferenceException();
+                        ILTypeInstance child = (ILTypeInstance)ins;
+                        child.AssignFromStack(esp, domain, managedStack);
                     }
+                    else
+                    {
+                        managedObjs[fieldIdx] = ((CLRType)vt).ValueTypeBinder.ToObject(dst, managedStack);
+                    }
+                }
                     break;
                 default:
                     if (managedObjs != null)
@@ -643,7 +638,7 @@ namespace ILRuntime.Runtime.Intepreter
             }
         }
 
-       
+
         public override string ToString()
         {
             var m = type.ToStringMethod;
@@ -706,6 +701,7 @@ namespace ILRuntime.Runtime.Intepreter
             else
                 return base.Equals(obj);
         }
+
         public override int GetHashCode()
         {
             if (type != null)
@@ -747,6 +743,7 @@ namespace ILRuntime.Runtime.Intepreter
                 ins.fields[i] = fields[i];
                 ins.managedObjs[i] = ILIntepreter.CheckAndCloneValueType(managedObjs[i], Type.AppDomain);
             }
+
             return ins;
         }
 

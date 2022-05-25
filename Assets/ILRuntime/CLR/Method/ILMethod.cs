@@ -3,22 +3,20 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Reflection;
-
 using ILRuntime.Mono.Cecil;
 using ILRuntime.Runtime;
 using ILRuntime.Runtime.Intepreter.OpCodes;
 using ILRuntime.Runtime.Intepreter;
-using ILRuntime.Runtime.Intepreter.RegisterVM;
 using ILRuntime.Runtime.Debugger;
 using ILRuntime.CLR.TypeSystem;
 using ILRuntime.Reflection;
+
 namespace ILRuntime.CLR.Method
 {
     public class ILMethod : IMethod
     {
         OpCode[] body;
         OpCodeR[] bodyRegister;
-        Dictionary<int, RegisterVMSymbol> registerSymbols;
         bool symbolFixed;
         MethodDefinition def;
         List<IType> parameters;
@@ -45,18 +43,30 @@ namespace ILRuntime.CLR.Method
 
         public bool Compiling { get; set; }
 
-        public bool IsRegisterBodyReady { get { return bodyRegister != null; } }
+        public bool IsRegisterBodyReady
+        {
+            get { return bodyRegister != null; }
+        }
 
-        public MethodDefinition Definition { get { return def; } }
+        public MethodDefinition Definition
+        {
+            get { return def; }
+        }
 
-        public Dictionary<int, int[]> JumpTables { get { return jumptables; } }
-        public Dictionary<int, int[]> JumpTablesRegister { get { return jumptablesR; } }
+        public Dictionary<int, int[]> JumpTables
+        {
+            get { return jumptables; }
+        }
 
-        internal Dictionary<int, RegisterVMSymbol> RegisterVMSymbols { get { return registerSymbols; } }
+        public Dictionary<int, int[]> JumpTablesRegister
+        {
+            get { return jumptablesR; }
+        }
 
-        internal int JITFlags { get { return jitFlags; } }
-
-        internal bool IsRegisterVMSymbolFixed { get { return symbolFixed; } }
+        internal bool IsRegisterVMSymbolFixed
+        {
+            get { return symbolFixed; }
+        }
 
         internal IDelegateAdapter DelegateAdapter { get; set; }
 
@@ -64,7 +74,10 @@ namespace ILRuntime.CLR.Method
 
         internal int EndLine { get; set; }
 
-        public ILRuntime.Runtime.Enviorment.AppDomain AppDomain { get { return appdomain; } }
+        public ILRuntime.Runtime.Enviorment.AppDomain AppDomain
+        {
+            get { return appdomain; }
+        }
 
         public MethodInfo ReflectionMethodInfo
         {
@@ -92,43 +105,29 @@ namespace ILRuntime.CLR.Method
 
         internal ExceptionHandler[] ExceptionHandler
         {
-            get
-            {
-                return exceptionHandler;
-            }
+            get { return exceptionHandler; }
         }
 
         internal ExceptionHandler[] ExceptionHandlerRegister
         {
-            get
-            {
-                return exceptionHandlerR;
-            }
+            get { return exceptionHandlerR; }
         }
 
         public string Name
         {
-            get
-            {
-                return def.Name;
-            }
+            get { return def.Name; }
         }
 
         public IType DeclearingType
         {
-            get
-            {
-                return declaringType;
-            }
+            get { return declaringType; }
         }
 
         public bool HasThis
         {
-            get
-            {
-                return def.HasThis;
-            }
+            get { return def.HasThis; }
         }
+
         public int GenericParameterCount
         {
             get
@@ -138,58 +137,27 @@ namespace ILRuntime.CLR.Method
                 return def.GenericParameters.Count;
             }
         }
+
         public bool IsGenericInstance
         {
-            get
-            {
-                return genericParameters != null;
-            }
+            get { return genericParameters != null; }
         }
+
         public Mono.Collections.Generic.Collection<Mono.Cecil.Cil.VariableDefinition> Variables
         {
-            get
-            {
-                return variables;
-            }
+            get { return variables; }
         }
 
-        public KeyValuePair<string, IType>[] GenericArguments { get { return genericParameters; } }
-
-        public IType[] GenericArugmentsArray { get { return genericArguments; } }
-
-        public bool ShouldUseRegisterVM
+        public KeyValuePair<string, IType>[] GenericArguments
         {
-            get
-            {
-                if (bodyRegister != null)
-                {
-                    body = null;
-                    exceptionHandler = null;
-                    return true;
-                }
-                else
-                {
-                    if (jitImmediately)
-                    {
-                        InitCodeBody(true);
-                        return true;
-                    }
-                    else
-                    {
-                        if (jitOnDemand)
-                        {
-                            warmupCounter++;
-                            if (warmupCounter > JITWarmUpThreshold && !jitPending)
-                            {
-                                jitPending = true;
-                                AppDomain.EnqueueJITCompileJob(this);
-                            }
-                        }
-                        return false;
-                    }
-                }
-            }
+            get { return genericParameters; }
         }
+
+        public IType[] GenericArugmentsArray
+        {
+            get { return genericArguments; }
+        }
+
         public ILMethod(MethodDefinition def, ILType type, ILRuntime.Runtime.Enviorment.AppDomain domain, int flags)
         {
             this.def = def;
@@ -201,22 +169,24 @@ namespace ILRuntime.CLR.Method
             }
             else
                 ReturnType = domain.GetType(def.ReturnType, type, this);
+
             if (type.IsDelegate && def.Name == "Invoke")
                 isDelegateInvoke = true;
             this.appdomain = domain;
             paramCnt = def.HasParameters ? def.Parameters.Count : 0;
-            if(def.HasCustomAttributes)
+            if (def.HasCustomAttributes)
             {
-                for(int i = 0; i < def.CustomAttributes.Count; i++)
+                for (int i = 0; i < def.CustomAttributes.Count; i++)
                 {
                     int f;
-                    if(def.CustomAttributes[i].GetJITFlags(domain, out f))
+                    if (def.CustomAttributes[i].GetJITFlags(domain, out f))
                     {
                         this.jitFlags = f;
                         break;
                     }
                 }
             }
+
             jitImmediately = (jitFlags & ILRuntimeJITFlags.JITImmediately) == ILRuntimeJITFlags.JITImmediately;
             jitOnDemand = (jitFlags & ILRuntimeJITFlags.JITOnDemand) == ILRuntimeJITFlags.JITOnDemand;
 #if DEBUG && !DISABLE_ILRUNTIME_DEBUG
@@ -234,15 +204,6 @@ namespace ILRuntime.CLR.Method
                 }
             }
 #endif
-        }
-
-        public void FixRegisterVMSymbol()
-        {
-            if (!symbolFixed && registerSymbols != null)
-            {
-                symbolFixed = true;
-                JITCompiler.FixSymbol(registerSymbols);
-            }
         }
 
         Mono.Cecil.Cil.SequencePoint GetValidSequence(int startIdx, int dir)
@@ -276,6 +237,7 @@ namespace ILRuntime.CLR.Method
             }
             else
                 return res;
+
             return null;
         }
 
@@ -284,7 +246,7 @@ namespace ILRuntime.CLR.Method
             get
             {
                 if (body == null)
-                    InitCodeBody(false);
+                    InitCodeBody();
                 return body;
             }
         }
@@ -294,57 +256,39 @@ namespace ILRuntime.CLR.Method
             get
             {
                 if (bodyRegister == null)
-                    InitCodeBody(true);
+                    InitCodeBody();
                 return bodyRegister;
             }
         }
 
         public bool HasBody
         {
-            get
-            {
-                return body != null;
-            }
+            get { return body != null; }
         }
 
         public int LocalVariableCount
         {
-            get
-            {
-                return localVarCnt;
-            }
+            get { return localVarCnt; }
         }
 
         public int StackRegisterCount
         {
-            get
-            {
-                return stackRegisterCnt;
-            }
+            get { return stackRegisterCnt; }
         }
 
         public bool IsConstructor
         {
-            get
-            {
-                return def.IsConstructor;
-            }
+            get { return def.IsConstructor; }
         }
 
         public bool IsVirtual
         {
-            get
-            {
-                return def.IsVirtual;
-            }
+            get { return def.IsVirtual; }
         }
 
         public bool IsDelegateInvoke
         {
-            get
-            {
-                return isDelegateInvoke;
-            }
+            get { return isDelegateInvoke; }
         }
 
         public bool IsStatic
@@ -354,10 +298,7 @@ namespace ILRuntime.CLR.Method
 
         public int ParameterCount
         {
-            get
-            {
-                return paramCnt;
-            }
+            get { return paramCnt; }
         }
 
 
@@ -369,15 +310,12 @@ namespace ILRuntime.CLR.Method
                 {
                     InitParameters();
                 }
+
                 return parameters;
             }
         }
 
-        public IType ReturnType
-        {
-            get;
-            private set;
-        }
+        public IType ReturnType { get; private set; }
 
         public void Prewarm(bool recursive)
         {
@@ -386,6 +324,7 @@ namespace ILRuntime.CLR.Method
             {
                 alreadyPrewarmed = new HashSet<ILMethod>();
             }
+
             Prewarm(alreadyPrewarmed);
         }
 
@@ -403,24 +342,24 @@ namespace ILRuntime.CLR.Method
                     case OpCodeEnum.Ldftn:
                     case OpCodeEnum.Ldvirtftn:
                     case OpCodeEnum.Callvirt:
+                    {
+                        var m = appdomain.GetMethod(ins.TokenInteger);
+                        if (m is ILMethod)
                         {
-                            var m = appdomain.GetMethod(ins.TokenInteger);
-                            if (m is ILMethod)
+                            ILMethod ilm = (ILMethod)m;
+                            //如果参数alreadyPrewarmed不为空，则不仅prewarm当前方法，还会递归prewarm所有子调用
+                            //如果参数alreadyPrewarmed为空，则只prewarm当前方法
+                            if (alreadyPrewarmed != null)
                             {
-                                ILMethod ilm = (ILMethod)m;
-                                //如果参数alreadyPrewarmed不为空，则不仅prewarm当前方法，还会递归prewarm所有子调用
-                                //如果参数alreadyPrewarmed为空，则只prewarm当前方法
-                                if (alreadyPrewarmed != null)
-                                {
-                                    ilm.Prewarm(alreadyPrewarmed);
-                                }
-                            }
-                            else if (m is CLRMethod)
-                            {
-                                CLRMethod clrm = (CLRMethod)m;
-                                ILRuntime.CLR.Utils.Extensions.GetTypeFlags(clrm.DeclearingType.TypeForCLR);
+                                ilm.Prewarm(alreadyPrewarmed);
                             }
                         }
+                        else if (m is CLRMethod)
+                        {
+                            CLRMethod clrm = (CLRMethod)m;
+                            ILRuntime.CLR.Utils.Extensions.GetTypeFlags(clrm.DeclearingType.TypeForCLR);
+                        }
+                    }
                         break;
                     case OpCodeEnum.Ldfld:
                     case OpCodeEnum.Stfld:
@@ -429,14 +368,14 @@ namespace ILRuntime.CLR.Method
                     case OpCodeEnum.Ldsflda:
                     case OpCodeEnum.Stsfld:
                     case OpCodeEnum.Ldtoken:
+                    {
+                        //提前InitializeBaseType()
+                        var t = appdomain.GetType((int)(ins.TokenLong >> 32));
+                        if (t != null)
                         {
-                            //提前InitializeBaseType()
-                            var t = appdomain.GetType((int)(ins.TokenLong >> 32));
-                            if (t != null)
-                            {
-                                var baseType = t.BaseType;
-                            }
+                            var baseType = t.BaseType;
                         }
+                    }
                         break;
                 }
             }
@@ -456,24 +395,24 @@ namespace ILRuntime.CLR.Method
                     case OpCodeREnum.Ldftn:
                     case OpCodeREnum.Ldvirtftn:
                     case OpCodeREnum.Callvirt:
+                    {
+                        var m = appdomain.GetMethod(ins.Operand);
+                        if (m is ILMethod)
                         {
-                            var m = appdomain.GetMethod(ins.Operand);
-                            if (m is ILMethod)
+                            ILMethod ilm = (ILMethod)m;
+                            //如果参数alreadyPrewarmed不为空，则不仅prewarm当前方法，还会递归prewarm所有子调用
+                            //如果参数alreadyPrewarmed为空，则只prewarm当前方法
+                            if (alreadyPrewarmed != null)
                             {
-                                ILMethod ilm = (ILMethod)m;
-                                //如果参数alreadyPrewarmed不为空，则不仅prewarm当前方法，还会递归prewarm所有子调用
-                                //如果参数alreadyPrewarmed为空，则只prewarm当前方法
-                                if (alreadyPrewarmed != null)
-                                {
-                                    ilm.Prewarm(alreadyPrewarmed);
-                                }
-                            }
-                            else if (m is CLRMethod)
-                            {
-                                CLRMethod clrm = (CLRMethod)m;
-                                ILRuntime.CLR.Utils.Extensions.GetTypeFlags(clrm.DeclearingType.TypeForCLR);
+                                ilm.Prewarm(alreadyPrewarmed);
                             }
                         }
+                        else if (m is CLRMethod)
+                        {
+                            CLRMethod clrm = (CLRMethod)m;
+                            ILRuntime.CLR.Utils.Extensions.GetTypeFlags(clrm.DeclearingType.TypeForCLR);
+                        }
+                    }
                         break;
                     case OpCodeREnum.Ldfld:
                     case OpCodeREnum.Stfld:
@@ -482,18 +421,19 @@ namespace ILRuntime.CLR.Method
                     case OpCodeREnum.Ldsflda:
                     case OpCodeREnum.Stsfld:
                     case OpCodeREnum.Ldtoken:
+                    {
+                        //提前InitializeBaseType()
+                        var t = appdomain.GetType((int)(ins.OperandLong >> 32));
+                        if (t != null)
                         {
-                            //提前InitializeBaseType()
-                            var t = appdomain.GetType((int)(ins.OperandLong >> 32));
-                            if (t != null)
-                            {
-                                var baseType = t.BaseType;
-                            }
+                            var baseType = t.BaseType;
                         }
+                    }
                         break;
                 }
             }
         }
+
         private void Prewarm(HashSet<ILMethod> alreadyPrewarmed)
         {
             if (alreadyPrewarmed != null && alreadyPrewarmed.Add(this) == false)
@@ -514,6 +454,7 @@ namespace ILRuntime.CLR.Method
                 {
                     t = appdomain.GetType(v.VariableType, DeclearingType, this);
                 }
+
                 if (t is CLRType)
                 {
                     CLRType ct = (CLRType)t;
@@ -521,13 +462,14 @@ namespace ILRuntime.CLR.Method
                     ILRuntime.CLR.Utils.Extensions.GetTypeFlags(ct.TypeForCLR);
                 }
             }
+
             if (jitImmediately || jitOnDemand)
                 PrewarmBodyRegister(alreadyPrewarmed);
             else
                 PrewarmBody(alreadyPrewarmed);
         }
 
-        internal void InitCodeBody(bool register)
+        internal void InitCodeBody()
         {
             if (def.HasBody)
             {
@@ -535,32 +477,19 @@ namespace ILRuntime.CLR.Method
                 Dictionary<Mono.Cecil.Cil.Instruction, int> addr = new Dictionary<Mono.Cecil.Cil.Instruction, int>();
 
                 bool noRelease = false;
-                if (register)
-                {
-                    JITCompiler jit = new JITCompiler(appdomain, declaringType, this);
-                    bodyRegister = jit.Compile(out stackRegisterCnt, out jumptablesR, addr, out registerSymbols);
-                }
-                else
-                {
-                    InitStackCodeBody(addr);
-                    if (jitOnDemand)
-                        noRelease = bodyRegister == null;
-                }
+
+                InitStackCodeBody(addr);
+                if (jitOnDemand)
+                    noRelease = bodyRegister == null;
+
                 if (def.Body.ExceptionHandlers.Count > 0)
                 {
                     ExceptionHandler[] ehs;
-                    if (register)
-                    {
-                        if (exceptionHandlerR == null)
-                            exceptionHandlerR = new Method.ExceptionHandler[def.Body.ExceptionHandlers.Count];
-                        ehs = exceptionHandlerR;
-                    }
-                    else
-                    {
-                        if (exceptionHandler == null)
-                            exceptionHandler = new Method.ExceptionHandler[def.Body.ExceptionHandlers.Count];
-                        ehs = exceptionHandler;
-                    }
+
+                    if (exceptionHandler == null)
+                        exceptionHandler = new Method.ExceptionHandler[def.Body.ExceptionHandlers.Count];
+                    ehs = exceptionHandler;
+
 
                     for (int i = 0; i < def.Body.ExceptionHandlers.Count; i++)
                     {
@@ -585,10 +514,12 @@ namespace ILRuntime.CLR.Method
                             default:
                                 throw new NotImplementedException();
                         }
+
                         ehs[i] = e;
                     }
                     //Mono.Cecil.Cil.ExceptionHandlerType.
                 }
+
                 variables = def.Body.Variables;
 #if !DEBUG || DISABLE_ILRUNTIME_DEBUG
                 //Release Method body to save memory
@@ -611,11 +542,13 @@ namespace ILRuntime.CLR.Method
                 addr[c] = i;
                 body[i] = code;
             }
+
             for (int i = 0; i < body.Length; i++)
             {
                 var c = def.Body.Instructions[i];
                 InitToken(ref body[i], c.Operand, addr);
-                if (i > 0 && c.OpCode.Code == Mono.Cecil.Cil.Code.Callvirt && def.Body.Instructions[i - 1].OpCode.Code == Mono.Cecil.Cil.Code.Constrained)
+                if (i > 0 && c.OpCode.Code == Mono.Cecil.Cil.Code.Callvirt &&
+                    def.Body.Instructions[i - 1].OpCode.Code == Mono.Cecil.Cil.Code.Constrained)
                 {
                     body[i - 1].TokenLong = body[i].TokenInteger;
                 }
@@ -667,16 +600,16 @@ namespace ILRuntime.CLR.Method
                     code.TokenLong = (long)token;
                     break;
                 case OpCodeEnum.Ldc_R4:
-                    {
-                        float val = (float)token;
-                        code.TokenInteger = *(int*)&val;
-                    }
+                {
+                    float val = (float)token;
+                    code.TokenInteger = *(int*)&val;
+                }
                     break;
                 case OpCodeEnum.Ldc_R8:
-                    {
-                        double val = (double)token;
-                        code.TokenLong = *(long*)&val;
-                    }
+                {
+                    double val = (double)token;
+                    code.TokenLong = *(long*)&val;
+                }
                     break;
                 case OpCodeEnum.Stloc:
                 case OpCodeEnum.Stloc_S:
@@ -684,10 +617,10 @@ namespace ILRuntime.CLR.Method
                 case OpCodeEnum.Ldloc_S:
                 case OpCodeEnum.Ldloca:
                 case OpCodeEnum.Ldloca_S:
-                    {
-                        Mono.Cecil.Cil.VariableDefinition vd = (Mono.Cecil.Cil.VariableDefinition)token;
-                        code.TokenInteger = vd.Index;
-                    }
+                {
+                    Mono.Cecil.Cil.VariableDefinition vd = (Mono.Cecil.Cil.VariableDefinition)token;
+                    code.TokenInteger = vd.Index;
+                }
                     break;
                 case OpCodeEnum.Ldarg_S:
                 case OpCodeEnum.Ldarg:
@@ -695,44 +628,45 @@ namespace ILRuntime.CLR.Method
                 case OpCodeEnum.Ldarga_S:
                 case OpCodeEnum.Starg:
                 case OpCodeEnum.Starg_S:
-                    {
-                        Mono.Cecil.ParameterDefinition vd = (Mono.Cecil.ParameterDefinition)token;
-                        code.TokenInteger = vd.Index;
-                        if (HasThis)
-                            code.TokenInteger++;
-                    }
+                {
+                    Mono.Cecil.ParameterDefinition vd = (Mono.Cecil.ParameterDefinition)token;
+                    code.TokenInteger = vd.Index;
+                    if (HasThis)
+                        code.TokenInteger++;
+                }
                     break;
                 case OpCodeEnum.Call:
                 case OpCodeEnum.Newobj:
                 case OpCodeEnum.Ldftn:
                 case OpCodeEnum.Ldvirtftn:
                 case OpCodeEnum.Callvirt:
+                {
+                    bool invalidToken;
+                    var m = appdomain.GetMethod(token, declaringType, this, out invalidToken);
+                    if (m != null)
                     {
-                        bool invalidToken;
-                        var m = appdomain.GetMethod(token, declaringType, this, out invalidToken);
-                        if (m != null)
+                        if (code.Code == OpCodeEnum.Callvirt && m is ILMethod)
                         {
-                            if(code.Code == OpCodeEnum.Callvirt && m is ILMethod)
-                            {
-                                ILMethod ilm = (ILMethod)m;
-                                if (!ilm.def.IsAbstract && !ilm.def.IsVirtual && !ilm.DeclearingType.IsInterface)
-                                    code.Code = OpCodeEnum.Call;
-                            }
-                            if (invalidToken)
-                                code.TokenInteger = m.GetHashCode();
-                            else
-                                code.TokenInteger = token.GetHashCode();
+                            ILMethod ilm = (ILMethod)m;
+                            if (!ilm.def.IsAbstract && !ilm.def.IsVirtual && !ilm.DeclearingType.IsInterface)
+                                code.Code = OpCodeEnum.Call;
                         }
+
+                        if (invalidToken)
+                            code.TokenInteger = m.GetHashCode();
                         else
-                        {
-                            //Cannot find method or the method is dummy
-                            MethodReference _ref = (MethodReference)token;
-                            int paramCnt = _ref.HasParameters ? _ref.Parameters.Count : 0;
-                            if (_ref.HasThis)
-                                paramCnt++;
-                            code.TokenLong = paramCnt;
-                        }
+                            code.TokenInteger = token.GetHashCode();
                     }
+                    else
+                    {
+                        //Cannot find method or the method is dummy
+                        MethodReference _ref = (MethodReference)token;
+                        int paramCnt = _ref.HasParameters ? _ref.Parameters.Count : 0;
+                        if (_ref.HasThis)
+                            paramCnt++;
+                        code.TokenLong = paramCnt;
+                    }
+                }
                     break;
                 case OpCodeEnum.Constrained:
                 case OpCodeEnum.Box:
@@ -743,52 +677,52 @@ namespace ILRuntime.CLR.Method
                 case OpCodeEnum.Newarr:
                 case OpCodeEnum.Stobj:
                 case OpCodeEnum.Ldobj:
-                    {
-                        code.TokenInteger = GetTypeTokenHashCode(token);
-                    }
+                {
+                    code.TokenInteger = GetTypeTokenHashCode(token);
+                }
                     break;
                 case OpCodeEnum.Stfld:
                 case OpCodeEnum.Ldfld:
                 case OpCodeEnum.Ldflda:
-                    {
-                        code.TokenLong = appdomain.GetStaticFieldIndex(token, declaringType, this);
-                    }
+                {
+                    code.TokenLong = appdomain.GetStaticFieldIndex(token, declaringType, this);
+                }
                     break;
 
                 case OpCodeEnum.Stsfld:
                 case OpCodeEnum.Ldsfld:
                 case OpCodeEnum.Ldsflda:
-                    {
-                        code.TokenLong = appdomain.GetStaticFieldIndex(token, declaringType, this);
-                    }
+                {
+                    code.TokenLong = appdomain.GetStaticFieldIndex(token, declaringType, this);
+                }
                     break;
                 case OpCodeEnum.Ldstr:
-                    {
-                        long hashCode = appdomain.CacheString(token);
-                        code.TokenLong = hashCode;
-                    }
+                {
+                    long hashCode = appdomain.CacheString(token);
+                    code.TokenLong = hashCode;
+                }
                     break;
                 case OpCodeEnum.Ldtoken:
+                {
+                    if (token is FieldReference)
                     {
-                        if (token is FieldReference)
-                        {
-                            code.TokenInteger = 0;
-                            code.TokenLong = appdomain.GetStaticFieldIndex(token, declaringType, this);
-                        }
-                        else if (token is TypeReference)
-                        {
-                            code.TokenInteger = 1;
-                            code.TokenLong = GetTypeTokenHashCode(token);
-                        }
-                        else
-                            throw new NotImplementedException();
+                        code.TokenInteger = 0;
+                        code.TokenLong = appdomain.GetStaticFieldIndex(token, declaringType, this);
                     }
+                    else if (token is TypeReference)
+                    {
+                        code.TokenInteger = 1;
+                        code.TokenLong = GetTypeTokenHashCode(token);
+                    }
+                    else
+                        throw new NotImplementedException();
+                }
                     break;
                 case OpCodeEnum.Switch:
-                    {
-                        PrepareJumpTable(token, addr);
-                        code.TokenInteger = token.GetHashCode();
-                    }
+                {
+                    PrepareJumpTable(token, addr);
+                    code.TokenInteger = token.GetHashCode();
+                }
                     break;
             }
         }
@@ -801,6 +735,7 @@ namespace ILRuntime.CLR.Method
             {
                 t = FindGenericArgument(((TypeReference)token).Name);
             }
+
             if (t != null)
             {
                 if (t is ILType || isGenericParameter)
@@ -810,6 +745,7 @@ namespace ILRuntime.CLR.Method
                 else
                     return token.GetHashCode();
             }
+
             return 0;
         }
 
@@ -825,11 +761,12 @@ namespace ILRuntime.CLR.Method
                 if (_ref.IsGenericInstance)
                 {
                     GenericInstanceType gi = (GenericInstanceType)_ref;
-                    foreach(var i in gi.GenericArguments)
+                    foreach (var i in gi.GenericArguments)
                     {
                         if (CheckHasGenericParamter(i))
                             return true;
                     }
+
                     return false;
                 }
                 else
@@ -872,12 +809,14 @@ namespace ILRuntime.CLR.Method
                     isByRef = true;
                     pt = ((ByReferenceType)pt).ElementType;
                 }
+
                 if (pt.IsArray)
                 {
                     isArray = true;
                     rank = ((ArrayType)pt).Rank;
                     pt = ((ArrayType)pt).ElementType;
                 }
+
                 if (pt.IsGenericParameter)
                 {
                     type = FindGenericArgument(pt.Name);
@@ -892,6 +831,7 @@ namespace ILRuntime.CLR.Method
                                 break;
                             }
                         }
+
                         if (found)
                         {
                             type = new ILGenericParameterType(pt.Name);
@@ -928,10 +868,12 @@ namespace ILRuntime.CLR.Method
             {
                 m.ReturnType = m.FindGenericArgument(m.def.ReturnType.Name);
             }
+
             return m;
         }
 
         string cachedName;
+
         public override string ToString()
         {
             if (cachedName == null)
@@ -954,9 +896,11 @@ namespace ILRuntime.CLR.Method
                     sb.Append(' ');
                     sb.Append(def.Parameters[i].Name);
                 }
+
                 sb.Append(')');
                 cachedName = sb.ToString();
             }
+
             return cachedName;
         }
 
@@ -969,6 +913,7 @@ namespace ILRuntime.CLR.Method
 
 
         bool? isExtend;
+
         public bool IsExtend
         {
             get
@@ -977,6 +922,7 @@ namespace ILRuntime.CLR.Method
                 {
                     isExtend = this.IsExtendMethod();
                 }
+
                 return isExtend.Value;
             }
         }
