@@ -71,6 +71,8 @@ namespace ILRuntime.Runtime.Enviorment
         /// Determine if invoking unbinded CLR method(using reflection) is allowed
         /// </summary>
         public bool AllowUnboundCLRMethod { get; set; }
+        
+        public string Name { get; set; }
 
 #if DEBUG && !NO_PROFILER
         public int UnityMainThreadID { get; set; }
